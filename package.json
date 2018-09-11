@@ -1,0 +1,47 @@
+{
+  "name": "@awaw00/rxstore",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "license": "MIT",
+  "author": {
+    "name": "awaw00",
+    "email": "awaw0618@outlook.com"
+  },
+  "scripts": {
+    "clean": "rimraf lib && rimraf es",
+    "ts:lib": "tsc --module commonjs --outDir lib",
+    "ts:es": "tsc --module esnext --outDir es",
+    "build": "npm run clean && npm run ts:lib",
+    "test": "cross-env NODE_ENV=test mocha --opts mocha.opts",
+    "test:watch": "cross-env NODE_ENV=test mocha --opts mocha.opts --watch"
+  },
+  "peerDependencies": {
+    "inversify": "^4.13.0",
+    "reflect-metadata": "^0.1.12",
+    "rxjs": "^6.3.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.5",
+    "@types/sinon": "^5.0.2",
+    "chai": "^4.1.2",
+    "cross-env": "^5.2.0",
+    "inversify": "^4.13.0",
+    "jsdom": "^12.0.0",
+    "jsdom-global": "^3.0.2",
+    "mocha": "^5.2.0",
+    "mocha-clean": "^1.0.0",
+    "object-assign": "^4.1.1",
+    "promise": "^8.0.1",
+    "raf": "^3.4.0",
+    "reflect-metadata": "^0.1.12",
+    "rimraf": "^2.6.2",
+    "rxjs": "^6.3.2",
+    "sinon": "^6.2.0",
+    "ts-node": "^7.0.1",
+    "tslint-config-prettier": "^1.15.0",
+    "typescript": "^3.0.3",
+    "whatwg-fetch": "^2.0.4"
+  }
+}
