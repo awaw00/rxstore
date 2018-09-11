@@ -41,6 +41,7 @@ export class ModalStore extends RxStore<ModalState> {
     this.dispatch({type: this.types.OPEN});
   }
 
+  // store mast has a function decroatored with postConstruct for init store
   @postConstruct()
   private storeInit () {
     this.init({
@@ -60,6 +61,7 @@ export class ModalStore extends RxStore<ModalState> {
     });
   }
   
+  // define effects with Effect decorator
   @Effect
   private onOpen () {
     return this.action$.pipe(
@@ -111,8 +113,8 @@ class App extends React.Component<AppProps, AppState> {
     const {modalStore} = this.props;
     return (
       <div>
-        <Modal visible={modalState.open} ...>
-          <Spin spining={modalState.loading}>
+        <Modal title={modalState.title} visible={modalState.open} ...>
+          <Spin spinning={modalState.loading}>
             ...
           </Spin>
         </Modal>
