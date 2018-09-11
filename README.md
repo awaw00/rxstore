@@ -110,7 +110,7 @@ class App extends React.Component<AppProps, AppState> {
       } else {
         this.setState({modalState});
       }
-    })
+    });
   }
   render () {
     const {modalState} = this.state;
