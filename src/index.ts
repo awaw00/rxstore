@@ -1,6 +1,17 @@
 import 'reflect-metadata';
 import { pipe, merge, concat, BehaviorSubject, Observable, Subject } from 'rxjs';
-import { startWith, tap, filter, share, shareReplay, refCount, map, scan, withLatestFrom } from 'rxjs/operators';
+import {
+  startWith,
+  tap,
+  filter,
+  share,
+  shareReplay,
+  refCount,
+  map,
+  scan,
+  withLatestFrom,
+  distinctUntilChanged,
+} from 'rxjs/operators';
 import { injectable, inject, Container } from 'inversify';
 
 export const ActionStream = Symbol('ACTION_STREAM');
@@ -76,6 +87,7 @@ export abstract class RxStore<S = any> {
 
     this.state$ = this.action$.pipe(
       scan(this.options.reducer, this.options.initialState),
+      distinctUntilChanged(),
       shareReplay(1),
     );
 
