@@ -62,7 +62,12 @@ export abstract class RxStore<S = any> {
 
   protected init (options: RxStoreOptions<S>) {
     this.options = options;
-    const initAction = {type: Symbol('@@INIT')};
+
+    this.state$ = this.action$.pipe(
+      scan(this.options.reducer, this.options.initialState),
+      distinctUntilChanged(),
+      shareReplay(1),
+    );
 
     const effectNames = Reflect.getMetadata(effectNamesKey, this);
     const effectMethodNames = effectNames ? effectNames.split('|') : [];
@@ -74,19 +79,13 @@ export abstract class RxStore<S = any> {
 
     const actionWithEffects$ = merge.apply(null, effects);
 
-    this.state$ = this.action$.pipe(
-      scan(this.options.reducer, this.options.initialState),
-      distinctUntilChanged(),
-      shareReplay(1),
-    );
-
     const withEffect$ = merge(
       this.state$,
       actionWithEffects$,
     );
 
     this.unsubscriber = withEffect$.subscribe();
-    this.dispatch(initAction);
+    this.dispatch({type: Symbol('@@INIT')});
   }
 
   protected put<T = any> (action: Action<T>) {
