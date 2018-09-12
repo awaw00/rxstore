@@ -1,18 +1,7 @@
 import 'reflect-metadata';
-import { pipe, merge, concat, BehaviorSubject, Observable, Subject } from 'rxjs';
-import {
-  startWith,
-  tap,
-  filter,
-  share,
-  shareReplay,
-  refCount,
-  map,
-  scan,
-  withLatestFrom,
-  distinctUntilChanged,
-} from 'rxjs/operators';
-import { injectable, inject, Container } from 'inversify';
+import { merge, Observable, Subject } from 'rxjs';
+import { distinctUntilChanged, filter, scan, shareReplay, tap } from 'rxjs/operators';
+import { inject, injectable } from 'inversify';
 
 export const ActionStream = Symbol('ACTION_STREAM');
 export type ActionType = string | symbol;
@@ -25,7 +14,7 @@ export function ofType<T> (...types: any[]) {
   return (action$: Observable<Action<T>>) => action$.pipe(
     filter((action: Action<T>) => {
       return types.indexOf(action.type) >= 0;
-    })
+    }),
   );
 }
 
@@ -59,7 +48,7 @@ export abstract class RxStore<S = any> {
 
   @inject(ActionStream)
   protected action$!: Subject<Action>;
-  private unsubscriber!: {unsubscribe: () => void};
+  private unsubscriber!: { unsubscribe: () => void };
 
   public dispatch<T = any> (action: Action<T>) {
     this.action$.next(action);
@@ -93,7 +82,7 @@ export abstract class RxStore<S = any> {
 
     const withEffect$ = merge(
       this.state$,
-      actionWithEffects$
+      actionWithEffects$,
     );
 
     this.unsubscriber = withEffect$.subscribe();
@@ -102,7 +91,7 @@ export abstract class RxStore<S = any> {
 
   protected put<T = any> (action: Action<T>) {
     return (effect$: Observable<any>) => effect$.pipe(
-      tap(() => this.dispatch(action))
+      tap(() => this.dispatch(action)),
     );
   }
 }
