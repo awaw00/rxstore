@@ -1,10 +1,16 @@
 import 'reflect-metadata';
 import { merge, Observable, Subject } from 'rxjs';
-import { distinctUntilChanged, filter, scan, shareReplay, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, scan, shareReplay } from 'rxjs/operators';
 import { inject, injectable } from 'inversify';
 
 export const ActionStream = Symbol('ACTION_STREAM');
 export type ActionType = string | symbol;
+
+export interface AsyncActionType {
+  START: ActionType;
+  END: ActionType;
+  ERR: ActionType;
+}
 
 export function ofType<T> (...types: any[]) {
   if (types.length === 1 && Array.isArray(types[0])) {
@@ -29,16 +35,32 @@ export interface RxStoreOptions<S> {
 }
 
 const effectNamesKey = Symbol('effectnames');
+const typeDefNamesKey = Symbol('typenames');
+const asyncTypeDefNamesKey = Symbol('asynctypenames');
 
-export function Effect (target: any, key: string, descriptor: any) {
-  let effectNames = Reflect.getMetadata(effectNamesKey, target);
-  if (effectNames) {
-    effectNames = effectNames + '|' + key;
-  } else {
-    effectNames = key;
-  }
+function addKeys (namesKey: symbol) {
+  return function (target: any, key: string) {
+    let names = Reflect.getMetadata(namesKey, target);
+    if (names) {
+      names = names + '|' + key;
+    } else {
+      names = key;
+    }
 
-  Reflect.defineMetadata(effectNamesKey, effectNames, target);
+    Reflect.defineMetadata(namesKey, names, target);
+  };
+}
+
+export function effect (target: any, key: string, descriptor: any) {
+  addKeys(effectNamesKey)(target, key);
+}
+
+export function typeDef (target: any, key: string) {
+  addKeys(typeDefNamesKey)(target, key);
+}
+
+export function asyncTypeDef (target: any, key: string) {
+  addKeys(asyncTypeDefNamesKey)(target, key);
 }
 
 @injectable()
@@ -62,6 +84,9 @@ export abstract class RxStore<S = any> {
 
   protected init (options: RxStoreOptions<S>) {
     this.options = options;
+
+    this.setTypesValue();
+    this.setAsyncTypesValue();
 
     this.state$ = this.action$.pipe(
       scan(this.options.reducer, this.options.initialState),
@@ -88,11 +113,25 @@ export abstract class RxStore<S = any> {
     this.dispatch({type: Symbol('@@INIT')});
   }
 
-  protected put<T = any> (action: Action<T>) {
-    return (effect$: Observable<any>) => effect$.pipe(
-      tap(() => this.dispatch(action)),
-    );
+  private setTypesValue () {
+    const typeNamesStr = Reflect.getMetadata(typeDefNamesKey, this) || '';
+    const typeNames = typeNamesStr.split('|');
+
+    for (const name of typeNames) {
+      (this as any)[name] = Symbol(name);
+    }
+  }
+
+  private setAsyncTypesValue () {
+    const asyncTypeNamesStr = Reflect.getMetadata(typeDefNamesKey, this) || '';
+    const asyncTypeNames = asyncTypeNamesStr.split('|');
+
+    for (const name of asyncTypeNames) {
+      (this as any)[name] = {
+        START: Symbol(`${name}/START`),
+        END: Symbol(`${name}/END`),
+        ERR: Symbol(`${name}/ERR`),
+      };
+    }
   }
 }
-
-
