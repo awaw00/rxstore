@@ -25,7 +25,7 @@ with typescript, you should install the "reflect-metadata" package as well:
 
 ```typescript
 import { tap } from 'rxjs/operators';
-import { RxStore, Effect, ofType } from '@awaw00/rxstore';
+import { RxStore, effect, typeDef, asyncTypeDef, ofType, ActionType, AsyncActionType } from '@awaw00/rxstore';
 import { injectable, postConstruct } from "inversify";
 
 export interface ModalState {
@@ -37,12 +37,13 @@ export interface ModalState {
 
 @injectable()
 export class ModalStore extends RxStore<ModalState> {
-  public types = {
-    OPEN: Symbol('OPEN')
-  };
+  @typeDef
+  public OPEN!: ActionType;
+  @asyncTypeDef
+  public GET_DATA!: AsyncActionType;
 
   public open () {
-    this.dispatch({type: this.types.OPEN});
+    this.dispatch({type: this.OPEN});
   }
 
   // store mast has a function decroatored with postConstruct for init store
@@ -57,7 +58,7 @@ export class ModalStore extends RxStore<ModalState> {
       },
       reducer: (state, action) => {
         switch (action.type) {
-          case this.types.OPEN:
+          case this.OPEN:
             return {...state, open: true};
         }
         return state;
@@ -65,11 +66,11 @@ export class ModalStore extends RxStore<ModalState> {
     });
   }
   
-  // define effects with Effect decorator
-  @Effect
+  // define effects with effect decorator
+  @effect
   private onOpen () {
     return this.action$.pipe(
-      ofType(this.types.OPEN),
+      ofType(this.OPEN),
       tap(() => console.log('modal opened'))
     );
   }
