@@ -72,6 +72,11 @@ export abstract class RxStore<S = any> {
   protected action$!: Subject<Action>;
   private unsubscriber!: { unsubscribe: () => void };
 
+  protected constructor () {
+    this.setTypesValue();
+    this.setAsyncTypesValue();
+  }
+
   public dispatch<T = any> (action: Action<T>) {
     this.action$.next(action);
   }
@@ -84,9 +89,6 @@ export abstract class RxStore<S = any> {
 
   protected init (options: RxStoreOptions<S>) {
     this.options = options;
-
-    this.setTypesValue();
-    this.setAsyncTypesValue();
 
     this.state$ = this.action$.pipe(
       scan(this.options.reducer, this.options.initialState),
