@@ -72,7 +72,7 @@ export abstract class RxStore<S = any> {
   protected action$!: Subject<Action>;
   private unsubscriber!: { unsubscribe: () => void };
 
-  protected constructor () {
+  constructor () {
     this.setTypesValue();
     this.setAsyncTypesValue();
   }
@@ -125,7 +125,7 @@ export abstract class RxStore<S = any> {
   }
 
   private setAsyncTypesValue () {
-    const asyncTypeNamesStr = Reflect.getMetadata(typeDefNamesKey, this) || '';
+    const asyncTypeNamesStr = Reflect.getMetadata(asyncTypeDefNamesKey, this) || '';
     const asyncTypeNames = asyncTypeNamesStr.split('|');
 
     for (const name of asyncTypeNames) {
