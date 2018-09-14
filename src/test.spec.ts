@@ -16,8 +16,8 @@ describe('Test', () => {
 
   it('Should typeDef and asyncTypeDef work', () => {
     class Store extends RxStore<any> {
-      @typeDef public TYPE!: ActionType;
-      @asyncTypeDef public ASYNC_TYPE!: AsyncActionType;
+      @typeDef() public TYPE!: ActionType;
+      @asyncTypeDef() public ASYNC_TYPE!: AsyncActionType;
 
       public constructor () {
         super();
@@ -46,7 +46,7 @@ describe('Test', () => {
 
     @injectable()
     class ChildStore extends RxStore<ChildState> {
-      @typeDef public CHANGE_AGE!: ActionType;
+      @typeDef() public CHANGE_AGE!: ActionType;
 
       @postConstruct()
       private storeInit () {

@@ -13,14 +13,20 @@ function addKeys (namesKey: symbol) {
   };
 }
 
-export function effect (target: any, key: string, descriptor: any) {
-  addKeys(effectNamesKey)(target, key);
+export function effect () {
+  return (target: any, key: string, descriptor: any) => {
+    addKeys(effectNamesKey)(target, key);
+  };
 }
 
-export function typeDef (target: any, key: string) {
-  addKeys(typeDefNamesKey)(target, key);
+export function typeDef () {
+  return (target: any, key: string) => {
+    addKeys(typeDefNamesKey)(target, key);
+  };
 }
 
-export function asyncTypeDef (target: any, key: string) {
-  addKeys(asyncTypeDefNamesKey)(target, key);
+export function asyncTypeDef () {
+  return (target: any, key: string) => {
+    addKeys(asyncTypeDefNamesKey)(target, key);
+  };
 }

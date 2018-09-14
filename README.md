@@ -37,10 +37,8 @@ export interface ModalState {
 
 @injectable()
 export class ModalStore extends RxStore<ModalState> {
-  @typeDef
-  public OPEN!: ActionType;
-  @asyncTypeDef
-  public GET_DATA!: AsyncActionType;
+  @typeDef() public OPEN!: ActionType;
+  @asyncTypeDef() public GET_DATA!: AsyncActionType;
 
   public open () {
     this.dispatch({type: this.OPEN});
@@ -67,7 +65,7 @@ export class ModalStore extends RxStore<ModalState> {
   }
   
   // define effects with effect decorator
-  @effect
+  @effect()
   private onOpen () {
     return this.action$.pipe(
       ofType(this.OPEN),
