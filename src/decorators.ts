@@ -1,4 +1,4 @@
-import { asyncTypeDefNamesKey, effectNamesKey, linkServiceNamesKey, typeDefNamesKey } from './metadataKeys';
+import { asyncTypeDefNamesKey, effectNamesKey, typeDefNamesKey } from './metadataKeys';
 
 function addKeys (namesKey: symbol) {
   return function (target: any, key: string) {
