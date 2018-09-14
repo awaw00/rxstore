@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
+import Base = Mocha.reporters.Base;
 
-export const ActionStream = Symbol('ACTION_STREAM');
 export type ActionType = string | symbol;
 
 export interface AsyncActionType {
@@ -14,7 +14,7 @@ export interface Action<P = any> {
   payload?: P;
 }
 
-export interface RxStoreOptions<S> {
+export interface RxStoreInitOptions<S> {
   initialState: S;
   reducer: (state: S, action: Action) => S;
 }
@@ -22,11 +22,20 @@ export interface RxStoreOptions<S> {
 export interface AsyncState <T = any> {
   loading: boolean;
   data: T | null;
-  err: Error | null;
+  err: any | null;
 }
 
 export interface LinkServiceConfig<S> {
   type: AsyncActionType;
   service: (...args: any[]) => Observable<any>;
   state: keyof S;
+}
+
+export interface BaseConfigLinkService {
+  dataSelector?: (payload: any) => any;
+  errorSelector?: (payload: any) => Error;
+}
+
+export interface RxStoreConfig {
+  linkService?: BaseConfigLinkService;
 }

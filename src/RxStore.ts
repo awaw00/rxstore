@@ -1,17 +1,18 @@
 import { merge, Observable, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, scan, shareReplay, switchMap, tap } from 'rxjs/operators';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, optional } from 'inversify';
 import { asyncTypeDefNamesKey, effectNamesKey, typeDefNamesKey } from './metadataKeys';
-import { Action, ActionStream, AsyncState, LinkServiceConfig, RxStoreOptions } from './interfaces';
+import { Action, AsyncState, LinkServiceConfig, RxStoreConfig, RxStoreInitOptions } from './interfaces';
 import { isLinkServiceConfig } from './utils';
+import * as tokens from './tokens';
 import { ofType } from './operators';
 
 @injectable()
 export abstract class RxStore<S extends object = any> {
   public state$!: Observable<S>;
-  public options!: RxStoreOptions<S>;
+  public options!: RxStoreInitOptions<S>;
 
-  @inject(ActionStream)
+  @inject(tokens.ActionStream)
   protected action$!: Subject<Action>;
   private unsubscriber!: { unsubscribe: () => void };
   private serviceNeedLinkConfigs: LinkServiceConfig<S>[] = [];
@@ -19,6 +20,21 @@ export abstract class RxStore<S extends object = any> {
   constructor () {
     this.setTypesValue();
     this.setAsyncTypesValue();
+  }
+
+  @inject(tokens.RxStoreConfig)
+  @optional()
+  private _storeConfig?: RxStoreConfig;
+
+  public get storeConfig (): RxStoreConfig {
+    const configLinkService = this._storeConfig ? this._storeConfig.linkService : {};
+    return {
+      linkService: {
+        dataSelector: payload => payload,
+        errorSelector: payload => payload,
+        ...configLinkService,
+      },
+    };
   }
 
   public dispatch<T = any> (action: Action<T>) {
@@ -35,10 +51,9 @@ export abstract class RxStore<S extends object = any> {
     this.serviceNeedLinkConfigs.push(linkServiceConfig);
   }
 
-  protected init (options: RxStoreOptions<S>) {
+  protected init (options: RxStoreInitOptions<S>) {
     this.options = options;
-
-    // this.linkServices();
+    const {linkService: configLinkService} = this.storeConfig;
 
     const reducer = (state: S, action: Action) => {
       for (const config of this.serviceNeedLinkConfigs) {
@@ -60,12 +75,12 @@ export abstract class RxStore<S extends object = any> {
               }
               case asyncType.END: {
                 asyncState.loading = false;
-                asyncState.data = payload;
+                asyncState.data = configLinkService!.dataSelector!(payload);
                 break;
               }
               case asyncType.ERR: {
                 asyncState.loading = false;
-                asyncState.err = payload.err;
+                asyncState.err = configLinkService!.errorSelector!(payload);
                 break;
               }
             }
@@ -99,7 +114,7 @@ export abstract class RxStore<S extends object = any> {
           switchMap(({payload}) => config.service(payload).pipe(
             tap((res) => this.dispatch({type: config.type.END, payload: res})),
             catchError((err) => of(err).pipe(
-              tap(() => this.dispatch({type: config.type.ERR, payload: {err}})),
+              tap(() => this.dispatch({type: config.type.ERR, payload: err})),
             )),
           )),
         ));

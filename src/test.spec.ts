@@ -1,18 +1,18 @@
 import { Container, inject, injectable, postConstruct } from 'inversify';
 import {
   Action,
-  ActionStream,
   ActionType,
   AsyncActionType,
   AsyncState,
   asyncTypeDef,
   getInitialAsyncState,
-  RxStore,
+  RxStore, RxStoreConfig,
+  tokens,
   typeDef,
 } from './index';
 import { expect } from 'chai';
-import { combineLatest, Observable, of, Subject } from 'rxjs';
-import { delay, map, skip, take } from 'rxjs/operators';
+import { combineLatest, Observable, of, Subject, throwError } from 'rxjs';
+import { map, skip, take } from 'rxjs/operators';
 
 describe('Test', () => {
   let rootContainer: Container;
@@ -20,7 +20,7 @@ describe('Test', () => {
 
   beforeEach(() => {
     rootContainer = new Container();
-    rootContainer.bind(ActionStream).toConstantValue(action$);
+    rootContainer.bind(tokens.ActionStream).toConstantValue(action$);
   });
 
   afterEach(() => {
@@ -130,23 +130,29 @@ describe('Test', () => {
     @injectable()
     class Service {
       public getData () {
-        return of(true).pipe(delay(10));
+        return of(true);
       }
 
       public getDataWithParams (params: number) {
-        return of(params).pipe(delay(10));
+        return of(params);
+      }
+
+      public getDataThrowErr () {
+        return throwError(new Error('err'));
       }
     }
 
     interface StoreState {
       data: AsyncState<{ data: boolean }>;
       dataWithParams: AsyncState<{ data: number }>;
+      dataWithError: AsyncState;
     }
 
     @injectable()
     class Store extends RxStore<StoreState> {
       @asyncTypeDef() public GET_DATA!: AsyncActionType;
       @asyncTypeDef() public GET_DATA_WITH_PARAMS!: AsyncActionType;
+      @asyncTypeDef() public GET_DATA_WITH_ERROR!: AsyncActionType;
 
       @inject(Service)
       private service!: Service;
@@ -165,10 +171,105 @@ describe('Test', () => {
           state: 'dataWithParams',
         });
 
+        this.linkService({
+          type: this.GET_DATA_WITH_ERROR,
+          service: this.service.getDataThrowErr.bind(this.service),
+          state: 'dataWithError'
+        });
+
         this.init({
           initialState: {
             data: getInitialAsyncState(),
             dataWithParams: getInitialAsyncState(),
+            dataWithError: getInitialAsyncState()
+          },
+          reducer: (state, action) => {
+            return state;
+          },
+        });
+      }
+    }
+
+    rootContainer.bind(Service).toSelf().inSingletonScope();
+    rootContainer.bind(Store).toSelf().inSingletonScope();
+
+    const store = rootContainer.get(Store);
+
+    (store.state$.pipe(
+      skip(6),
+      take(1),
+    ) as Observable<StoreState>).subscribe(state => {
+      expect(state.data.loading).is.eq(false);
+      expect(state.data.err).is.eq(null);
+      expect(state.data.data).is.eq(true);
+      expect(state.dataWithParams.loading).is.eq(false);
+      expect(state.dataWithParams.err).is.eq(null);
+      expect(state.dataWithParams.data).is.eq(2);
+      expect(state.dataWithError.loading).is.eq(false);
+      expect(state.dataWithError.err!.message).is.eq('err');
+      expect(state.dataWithError.data).is.eq(null);
+      done();
+    });
+
+    store.dispatch({type: store.GET_DATA.START});
+    store.dispatch({type: store.GET_DATA_WITH_PARAMS.START, payload: 2});
+    store.dispatch({type: store.GET_DATA_WITH_ERROR.START});
+  });
+  it('Custom linkService dataSelector and errorSelector', (done) => {
+    @injectable()
+    class StoreConfig implements RxStoreConfig {
+      public get linkService () {
+        return {
+          dataSelector: (payload: any) => payload.data,
+          errorSelector: (payload: any) => payload.message,
+        };
+      }
+    }
+
+    rootContainer.bind(tokens.RxStoreConfig).to(StoreConfig).inSingletonScope();
+
+    @injectable()
+    class Service {
+      public getDataWithParams (params: number) {
+        return of({data: params});
+      }
+
+      public getDataThrowErr () {
+        return throwError(new Error('err'));
+      }
+    }
+
+    interface StoreState {
+      dataWithParams: AsyncState<{ data: number }>;
+      dataWithError: AsyncState;
+    }
+
+    @injectable()
+    class Store extends RxStore<StoreState> {
+      @asyncTypeDef() public GET_DATA_WITH_PARAMS!: AsyncActionType;
+      @asyncTypeDef() public GET_DATA_WITH_ERROR!: AsyncActionType;
+
+      @inject(Service)
+      private service!: Service;
+
+      @postConstruct()
+      private storeInit () {
+        this.linkService({
+          type: this.GET_DATA_WITH_PARAMS,
+          service: this.service.getDataWithParams.bind(this.service),
+          state: 'dataWithParams',
+        });
+
+        this.linkService({
+          type: this.GET_DATA_WITH_ERROR,
+          service: this.service.getDataThrowErr.bind(this.service),
+          state: 'dataWithError'
+        });
+
+        this.init({
+          initialState: {
+            dataWithParams: getInitialAsyncState(),
+            dataWithError: getInitialAsyncState()
           },
           reducer: (state, action) => {
             return state;
@@ -186,16 +287,16 @@ describe('Test', () => {
       skip(4),
       take(1),
     ) as Observable<StoreState>).subscribe(state => {
-      expect(state.data.loading).is.eq(false);
-      expect(state.data.err).is.eq(null);
-      expect(state.data.data).is.eq(true);
       expect(state.dataWithParams.loading).is.eq(false);
       expect(state.dataWithParams.err).is.eq(null);
       expect(state.dataWithParams.data).is.eq(2);
+      expect(state.dataWithError.loading).is.eq(false);
+      expect(state.dataWithError.err).is.eq('err');
+      expect(state.dataWithError.data).is.eq(null);
       done();
     });
 
-    store.dispatch({type: store.GET_DATA.START});
     store.dispatch({type: store.GET_DATA_WITH_PARAMS.START, payload: 2});
+    store.dispatch({type: store.GET_DATA_WITH_ERROR.START});
   });
 });
