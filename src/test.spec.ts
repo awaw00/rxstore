@@ -6,7 +6,8 @@ import {
   AsyncState,
   asyncTypeDef,
   getInitialAsyncState,
-  RxStore, RxStoreConfig,
+  RxStore,
+  RxStoreConfig,
   tokens,
   typeDef,
 } from './index';
@@ -174,14 +175,14 @@ describe('Test', () => {
         this.linkService({
           type: this.GET_DATA_WITH_ERROR,
           service: this.service.getDataThrowErr.bind(this.service),
-          state: 'dataWithError'
+          state: 'dataWithError',
         });
 
         this.init({
           initialState: {
             data: getInitialAsyncState(),
             dataWithParams: getInitialAsyncState(),
-            dataWithError: getInitialAsyncState()
+            dataWithError: getInitialAsyncState(),
           },
           reducer: (state, action) => {
             return state;
@@ -237,17 +238,35 @@ describe('Test', () => {
       public getDataThrowErr () {
         return throwError(new Error('err'));
       }
+
+      public getDataWithCustomDataSelector () {
+        return of({data: {data: 123}});
+      }
+
+      public getDataWithCustomErrorSelector () {
+        class CustomError extends Error {
+          constructor (public test: string) {
+            super('test');
+          }
+        }
+
+        return throwError(new CustomError('aaa'));
+      }
     }
 
     interface StoreState {
       dataWithParams: AsyncState<{ data: number }>;
       dataWithError: AsyncState;
+      dataWithCustomDataSelector: AsyncState<{ data: { data: number } }>;
+      dataWithCustomErrorSelector: AsyncState;
     }
 
     @injectable()
     class Store extends RxStore<StoreState> {
       @asyncTypeDef() public GET_DATA_WITH_PARAMS!: AsyncActionType;
       @asyncTypeDef() public GET_DATA_WITH_ERROR!: AsyncActionType;
+      @asyncTypeDef() public GET_DATA_WITH_CUSTOM_DATA_SELECTOR!: AsyncActionType;
+      @asyncTypeDef() public GET_DATA_WITH_CUSTOM_ERR_SELECTOR!: AsyncActionType;
 
       @inject(Service)
       private service!: Service;
@@ -263,13 +282,29 @@ describe('Test', () => {
         this.linkService({
           type: this.GET_DATA_WITH_ERROR,
           service: this.service.getDataThrowErr.bind(this.service),
-          state: 'dataWithError'
+          state: 'dataWithError',
+        });
+
+        this.linkService({
+          type: this.GET_DATA_WITH_CUSTOM_DATA_SELECTOR,
+          service: this.service.getDataWithCustomDataSelector.bind(this.service),
+          state: 'dataWithCustomDataSelector',
+          dataSelector: (payload: any) => payload.data.data,
+        });
+
+        this.linkService({
+          type: this.GET_DATA_WITH_CUSTOM_ERR_SELECTOR,
+          service: this.service.getDataWithCustomErrorSelector.bind(this.service),
+          state: 'dataWithCustomErrorSelector',
+          errorSelector: (payload: any) => payload.test,
         });
 
         this.init({
           initialState: {
             dataWithParams: getInitialAsyncState(),
-            dataWithError: getInitialAsyncState()
+            dataWithError: getInitialAsyncState(),
+            dataWithCustomDataSelector: getInitialAsyncState(),
+            dataWithCustomErrorSelector: getInitialAsyncState(),
           },
           reducer: (state, action) => {
             return state;
@@ -284,7 +319,7 @@ describe('Test', () => {
     const store = rootContainer.get(Store);
 
     (store.state$.pipe(
-      skip(4),
+      skip(8),
       take(1),
     ) as Observable<StoreState>).subscribe(state => {
       expect(state.dataWithParams.loading).is.eq(false);
@@ -293,10 +328,18 @@ describe('Test', () => {
       expect(state.dataWithError.loading).is.eq(false);
       expect(state.dataWithError.err).is.eq('err');
       expect(state.dataWithError.data).is.eq(null);
+      expect(state.dataWithCustomDataSelector.loading).is.eq(false);
+      expect(state.dataWithCustomDataSelector.data).is.eq(123);
+      expect(state.dataWithCustomDataSelector.err).is.eq(null);
+      expect(state.dataWithCustomErrorSelector.loading).is.eq(false);
+      expect(state.dataWithCustomErrorSelector.err).is.eq('aaa');
+      expect(state.dataWithCustomErrorSelector.data).is.eq(null);
       done();
     });
 
     store.dispatch({type: store.GET_DATA_WITH_PARAMS.START, payload: 2});
     store.dispatch({type: store.GET_DATA_WITH_ERROR.START});
+    store.dispatch({type: store.GET_DATA_WITH_CUSTOM_DATA_SELECTOR.START});
+    store.dispatch({type: store.GET_DATA_WITH_CUSTOM_ERR_SELECTOR.START});
   });
 });

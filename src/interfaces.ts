@@ -29,6 +29,8 @@ export interface LinkServiceConfig<S> {
   type: AsyncActionType;
   service: (...args: any[]) => Observable<any>;
   state: keyof S;
+  dataSelector?: (payload: any) => any;
+  errorSelector?: (payload: any) => any;
 }
 
 export interface BaseConfigLinkService {

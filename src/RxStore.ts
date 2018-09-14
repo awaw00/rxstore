@@ -57,7 +57,10 @@ export abstract class RxStore<S extends object = any> {
 
     const reducer = (state: S, action: Action) => {
       for (const config of this.serviceNeedLinkConfigs) {
-        const {state: stateKey, type: asyncType} = config;
+        const {state: stateKey, type: asyncType, dataSelector, errorSelector} = config;
+
+        const finalDataSelector = dataSelector || configLinkService!.dataSelector!;
+        const finalErrorSelector = errorSelector || configLinkService!.errorSelector!;
 
         const {type, payload} = action;
 
@@ -65,7 +68,7 @@ export abstract class RxStore<S extends object = any> {
           case asyncType.START:
           case asyncType.END:
           case asyncType.ERR: {
-            const asyncState = {...(state[config.state] as any)} as AsyncState;
+            const asyncState = {...(state[stateKey] as any)} as AsyncState;
 
             switch (type) {
               case asyncType.START: {
@@ -75,17 +78,17 @@ export abstract class RxStore<S extends object = any> {
               }
               case asyncType.END: {
                 asyncState.loading = false;
-                asyncState.data = configLinkService!.dataSelector!(payload);
+                asyncState.data = finalDataSelector(payload);
                 break;
               }
               case asyncType.ERR: {
                 asyncState.loading = false;
-                asyncState.err = configLinkService!.errorSelector!(payload);
+                asyncState.err = finalErrorSelector(payload);
                 break;
               }
             }
 
-            state = {...(state as any), [config.state]: asyncState} as S;
+            state = {...(state as any), [stateKey]: asyncState} as S;
           }
         }
       }
