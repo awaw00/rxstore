@@ -1,12 +1,5 @@
-import { RxStore } from './RxStore';
-import { ofType } from './operators';
-import { effect, typeDef, asyncTypeDef } from './decorators';
+export * from './RxStore';
+export * from './decorators';
+export * from './operators';
+export * from './utils';
 export * from './interfaces';
-
-export {
-  RxStore,
-  ofType,
-  effect,
-  typeDef,
-  asyncTypeDef,
-};
