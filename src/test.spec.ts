@@ -5,15 +5,17 @@ import {
   AsyncActionType,
   AsyncState,
   asyncTypeDef,
+  effect,
   getInitialAsyncState,
+  ofType,
   RxStore,
   RxStoreConfig,
   tokens,
   typeDef,
 } from './index';
 import { expect } from 'chai';
-import { combineLatest, Observable, of, Subject, throwError } from 'rxjs';
-import { map, skip, take } from 'rxjs/operators';
+import { combineLatest, concat, forkJoin, merge, Observable, of, Subject, throwError } from 'rxjs';
+import { bufferCount, map, mapTo, skip, skipWhile, take, takeUntil, tap } from 'rxjs/operators';
 
 describe('Test', () => {
   let rootContainer: Container;
@@ -341,5 +343,77 @@ describe('Test', () => {
     store.dispatch({type: store.GET_DATA_WITH_ERROR.START});
     store.dispatch({type: store.GET_DATA_WITH_CUSTOM_DATA_SELECTOR.START});
     store.dispatch({type: store.GET_DATA_WITH_CUSTOM_ERR_SELECTOR.START});
+  });
+
+  it.only('Epic action', (done) => {
+    interface State {
+      loopCount: number;
+    }
+
+    @injectable()
+    class Store extends RxStore<State> {
+      @typeDef() public LOOP!: ActionType;
+      @typeDef() public PING!: ActionType;
+      @typeDef() public PONG!: ActionType;
+
+      @postConstruct()
+      private storeInit () {
+        this.init({
+          initialState: {
+            loopCount: 0,
+          },
+          reducer: (state, action) => {
+            switch (action.type) {
+              case this.LOOP:
+                return {...state, loopCount: state.loopCount + 1};
+            }
+            return state;
+          },
+        });
+      }
+
+      @effect()
+      private onLoop () {
+        return this.action$.pipe(
+          ofType(this.LOOP),
+          takeUntil(this.state$.pipe(
+            skipWhile(state => state.loopCount < 11),
+          )),
+        );
+      }
+
+      @effect()
+      private onPing () {
+        return this.action$.pipe(
+          ofType(this.PING),
+          mapTo({type: this.PONG}),
+        );
+      }
+    }
+
+    const store = rootContainer.resolve(Store);
+
+    forkJoin(
+      concat(
+        action$.pipe(
+          ofType(store.LOOP),
+          bufferCount(10),
+          take(1),
+        ),
+        merge(
+          action$.pipe(
+            ofType(store.PONG),
+            take(1)
+          ),
+          of(0).pipe(tap(() => {
+            store.dispatch({type: store.PING});
+          })),
+        )
+      ),
+    ).subscribe(() => {
+      done();
+    });
+
+    store.dispatch({type: store.LOOP});
   });
 });
