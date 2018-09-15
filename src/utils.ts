@@ -1,4 +1,4 @@
-import { AsyncActionType, AsyncState, LinkServiceConfig } from './interfaces';
+import { Action, AsyncActionType, AsyncState, LinkServiceConfig } from './interfaces';
 
 export function getInitialAsyncState<T = any> (initialData?: T): AsyncState<T> {
   return {
@@ -6,6 +6,10 @@ export function getInitialAsyncState<T = any> (initialData?: T): AsyncState<T> {
     err: null,
     data: initialData ? initialData : null,
   };
+}
+
+export function isAction (obj: Action): obj is Action {
+  return typeof obj === 'object' && 'type' in obj && typeof obj.type === 'string' || typeof obj.type === 'symbol';
 }
 
 export function isAsyncActionType (obj: AsyncActionType): obj is AsyncActionType {

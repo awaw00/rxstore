@@ -1,9 +1,9 @@
 import { merge, Observable, of, Subject } from 'rxjs';
-import { catchError, distinctUntilChanged, scan, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, map, scan, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { inject, injectable, optional } from 'inversify';
 import { asyncTypeDefNamesKey, effectNamesKey, typeDefNamesKey } from './metadataKeys';
 import { Action, AsyncState, LinkServiceConfig, RxStoreConfig, RxStoreInitOptions } from './interfaces';
-import { isLinkServiceConfig } from './utils';
+import { isAction, isLinkServiceConfig } from './utils';
 import * as tokens from './tokens';
 import { ofType } from './operators';
 
@@ -111,13 +111,12 @@ export abstract class RxStore<S extends object = any> {
 
     for (const config of this.serviceNeedLinkConfigs) {
       if (isLinkServiceConfig(config)) {
+        const {type} = config;
         effects.push(this.action$.pipe(
-          ofType(config.type.START),
+          ofType(type.START),
           switchMap(({payload}) => config.service(payload).pipe(
-            tap((res) => this.dispatch({type: config.type.END, payload: res})),
-            catchError((err) => of(err).pipe(
-              tap(() => this.dispatch({type: config.type.ERR, payload: err})),
-            )),
+            map(res => ({type: type.END, payload: res})),
+            catchError((err) => of({type: type.ERR, payload: err})),
           )),
         ));
       } else {
@@ -125,7 +124,13 @@ export abstract class RxStore<S extends object = any> {
       }
     }
 
-    const actionWithEffects$ = merge(...effects);
+    const actionWithEffects$ = merge(...effects).pipe(
+      tap(action => {
+        if (isAction(action)) {
+          this.dispatch(action);
+        }
+      }),
+    );
 
     const withEffect$ = merge(
       this.state$,
