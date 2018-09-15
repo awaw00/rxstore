@@ -25,7 +25,7 @@ with typescript, you should install the "reflect-metadata" package as well:
 
 ```typescript
 import { tap } from 'rxjs/operators';
-import { RxStore, effect, typeDef, asyncTypeDef, ofType, ActionType, AsyncActionType } from '@awaw00/rxstore';
+import { RxStore, effect, typeDef, asyncTypeDef, ofType, end, ActionType, AsyncActionType } from '@awaw00/rxstore';
 import { injectable, postConstruct } from "inversify";
 
 export interface ModalState {
@@ -69,7 +69,7 @@ export class ModalStore extends RxStore<ModalState> {
   private onOpen () {
     return this.action$.pipe(
       ofType(this.OPEN),
-      tap(() => console.log('modal opened'))
+      tap(() => console.log('modal opened')),
     );
   }
 }
