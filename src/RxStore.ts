@@ -12,6 +12,15 @@ export abstract class RxStore<S extends object = any> {
   public state$!: Observable<S>;
   public options!: RxStoreInitOptions<S>;
 
+  public dispatch = <T = any> (action: Action<T>) => {
+    this.action$.next(action);
+  };
+  public destroy = () => {
+    if (this.unsubscriber) {
+      this.unsubscriber.unsubscribe();
+    }
+  };
+
   @inject(tokens.ActionStream)
   protected action$!: Subject<Action>;
   private unsubscriber!: { unsubscribe: () => void };
@@ -35,16 +44,6 @@ export abstract class RxStore<S extends object = any> {
         ...configLinkService,
       },
     };
-  }
-
-  public dispatch<T = any> (action: Action<T>) {
-    this.action$.next(action);
-  }
-
-  public destroy () {
-    if (this.unsubscriber) {
-      this.unsubscriber.unsubscribe();
-    }
   }
 
   protected linkService (linkServiceConfig: LinkServiceConfig<S>) {
