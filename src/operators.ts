@@ -13,3 +13,11 @@ export function ofType<T> (...types: any[]) {
     }),
   );
 }
+
+export function end<T> () {
+  return (action$: Observable<Action<T>>) => action$.pipe(
+    filter(() => {
+      return false;
+    })
+  );
+}
