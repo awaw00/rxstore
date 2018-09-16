@@ -290,6 +290,123 @@ class App extends React.Component {
 export default App;
 ```
 
-启动App，大功告成！
+启动项目，大功告成！
 
 查看[在线DEMO](https://awaw00.github.io/rxstore/counter/)，查看[完整代码](https://github.com/awaw00/rxstore/tree/master/examples/counter)。
+
+## 💎 Advanced Usage
+
+### Link Service
+
+开发一个web项目，一定少不了与后端数据接口做交互。
+
+通常情况下，我们可以编写一个这样的effect来处理接口请求和响应：
+
+```typescript
+interface State {
+  dataLoading: boolean;
+  data: any | null;
+  dataError: any | null;
+}
+
+@injectable()
+class Store extends RxStore<State> {
+  @asyncTypeDef() public GET_DATA!: AsyncActionType;
+  
+  @inject(Service)
+  private service: Service;
+  
+  @postConstruct()
+  private storeInit () {
+    this.init({
+      initialState: {
+        dataLoading: false,
+        data: null,
+        dataError: null
+      },
+      reducer: (state, action) => {
+        switch (action.type) {
+          case this.GET_DATA.START: {
+            return {...state, dataLoading: true, dataError: null};
+          }
+          case this.GET_DATA.END: {
+            return {...state, dataLoading: false, data: action.payload};
+          }
+          case this.GET_DATA.ERR: {
+            return {...state, dataLoading: false, dataError: action.payload};
+          }
+          default:
+            return state;
+        }
+      }
+    });
+  }
+  
+  @effect()
+  private onGetData () {
+    return this.action$.pipe(
+      ofType(this.GET_DATA.START),
+      switchMap((action) => this.service.getData(action.payload).pipe(
+        map(res => ({type: this.GET_DATA.END, payload: res})),
+        catchError(err => of({type: this.GET_DATA.ERR, payload: err})),
+      )),
+    );
+  }
+}
+```
+
+上面的代码看起来还ok，通过`this.GET_DATA.START`的action及其带上的payload作为参数发起请求，并且对接口的loading以及error状态都做了处理。
+
+但是如果按这样的写法来构建一个中大型的应用，你一定会抓狂的：数十个接口，每个接口都需要这样几乎没有区别的十几行代码来处理。
+
+为了简化store与接口的对接，基类RxStore提供了一个`linkService`方法，这个方法接受一个`LinkServiceConfig<State>`对象作为参数，其定义为：
+
+```typescript
+export interface LinkServiceConfig<S> {
+  type: AsyncActionType;
+  service: (...args: any[]) => Observable<any>;
+  state: keyof S;
+  dataSelector?: (payload: any) => any;
+  errorSelector?: (payload: any) => any;
+}
+```
+
+我们试试用它来改写上面的代码：
+
+```typescript
+import { AsyncState, getInitialAsyncState } from '@awaw00/rxstore';
+
+interface State {
+  data: AsyncState;
+}
+
+@injectable()
+class Store extends RxStore<State> {
+  @asyncTypeDef() public GET_DATA!: AsyncActionType;
+  
+  @inject(Service)
+  private service: Service;
+  
+  @postConstruct()
+  private storeInit () {
+    this.linkService({
+      type: this.GET_DATA,
+      service: this.service.getData.bind(this.service),
+      state: 'data'
+    });
+    
+    this.init({
+      initialState: {
+        data: getInitialAsyncState()
+      },
+      reducer: (state, action) => {
+        return state;
+      }
+    });
+  }
+}
+```
+
+新代码实现了与旧代码相同的功能，看起来是否清爽了很多呢？_`getInitialAsyncState`方法用于快速构建一个初始的异步状态对象。_
+
+**注意`linkService`方法需要在`init`方法之前调用。**
