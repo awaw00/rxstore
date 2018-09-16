@@ -138,7 +138,7 @@ export class CounterStore extends RxStore<CounterState> {
 
 > 为什么要使用postConstructor装饰器？  
 >
-> rxstore提倡使用inversify管理依赖关系，如果你的store使用了property inject的方式来注入外部依赖，在store的构造方法结束前，inversify并不能为你准备好这些依赖对象。  
+> rxstore使用inversify管理依赖关系，并且在基类RxStore中使用了property inject的方式来注入一些外部依赖（比如action$），在构造方法执行时，inversify并不能为我们准备好这些依赖对象。  
 >
 > 使用postConstructor可以确保所有依赖都已就绪后再执行store的初始化操作。
 
