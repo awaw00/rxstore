@@ -304,9 +304,11 @@ export default App;
 
 ```typescript
 interface State {
-  dataLoading: boolean;
-  data: any | null;
-  dataError: any | null;
+  dataState: {
+    loading: boolean;
+    data: any | null;
+    err: any | null;
+  };
 }
 
 @injectable()
@@ -320,20 +322,22 @@ class Store extends RxStore<State> {
   private storeInit () {
     this.init({
       initialState: {
-        dataLoading: false,
-        data: null,
-        dataError: null
+        dataState: {
+          loading: false,
+          data: null,
+          err: null
+        },
       },
       reducer: (state, action) => {
         switch (action.type) {
           case this.GET_DATA.START: {
-            return {...state, dataLoading: true, dataError: null};
+            return {...state, dataState: {...state.dataState, loading: true}};
           }
           case this.GET_DATA.END: {
-            return {...state, dataLoading: false, data: action.payload};
+            return {...state, dataState: {...state.dataState, loading: false, data: action.payload}};
           }
           case this.GET_DATA.ERR: {
-            return {...state, dataLoading: false, dataError: action.payload};
+            return {...state, dataState: {...state.dataState, loading: false, err: action.payload}};
           }
           default:
             return state;
@@ -377,7 +381,7 @@ export interface LinkServiceConfig<S> {
 import { AsyncState, getInitialAsyncState } from '@awaw00/rxstore';
 
 interface State {
-  data: AsyncState;
+  dataState: AsyncState;
 }
 
 @injectable()
@@ -392,12 +396,12 @@ class Store extends RxStore<State> {
     this.linkService({
       type: this.GET_DATA,
       service: this.service.getData.bind(this.service),
-      state: 'data'
+      state: 'dataState'
     });
     
     this.init({
       initialState: {
-        data: getInitialAsyncState()
+        dataState: getInitialAsyncState()
       },
       reducer: (state, action) => {
         return state;
@@ -410,3 +414,83 @@ class Store extends RxStore<State> {
 新代码实现了与旧代码相同的功能，看起来是否清爽了很多呢？_`getInitialAsyncState`方法用于快速构建一个初始的异步状态对象。_
 
 **注意`linkService`方法需要在`init`方法之前调用。**
+
+`LinkStoreConfig`接口中还有两个可选字段：`dataSelector`以及`errorSelector`。
+
+我们可以使用这两个字段来控制如何从异步方法的返回值或者抛出的错误转换成store中AsyncState.data或AsyncState.err。
+
+比如有如下的一个FakeService：
+
+```typescript
+@injectable()
+export class FakeService {
+  public getData () {
+    return of({data: {name: 'awaw00', email: 'awaw0618#outlook.com'}}).pipe(delay(1000));
+  }
+}
+```
+
+使用不带dataSelector的linkState后，会在store中保存整个结构为{data: {name: string; email: string}}的返回值。
+
+如果我们只想要保存data字段中的值{name: 'xxx', email: 'xxx'}，就需要指定一个dataSelector：
+
+```typescript
+this.linkState({
+  type: this.GET_DATA,
+  service: this.fakeService.getData.bind(this.fakeService),
+  state: 'data',
+  dataSelector: payload => payload.data
+});
+```
+
+errorSelector的用法与dataSelector类似。
+
+此外，我们还可以通过[注入RxStore配置](#注入RxStore配置)来修改默认的dataSelector与errorSelector。
+
+### 注入RxStore配置
+
+RxStore支持在外部注入一些配置来修改某些默认行为。
+
+注入配置的方法：
+
+1. 编写配置
+
+```typescript
+import { RxStoreConfig } from '@awaw00/rxstore';
+
+export class CustomRxStoreConfig implements RxStoreConfig {
+  
+}
+```
+
+2. 注入自定义配置
+
+```typescript
+...
+import { tokens } from '@awaw00/rxstore';
+import { CustomRxStoreConfig } from '../configs/CustomRxStoreConfig';
+
+...
+container.bind(tokens.RxStoreConfig).to(CustomRxStoreConfig).inSingletonScope();
+...
+```
+
+可配置项可见`RxStoreConfig`的接口定义：
+```typescript
+export interface BaseConfigLinkService {
+  dataSelector?: (payload: any) => any; // 配置linkService时默认的dataSelector
+  errorSelector?: (payload: any) => any; // 配置linkService时默认的errorSelector
+}
+
+export interface RxStoreConfig {
+  linkService?: BaseConfigLinkService;
+}
+```
+
+### store合并
+
+TODO
+
+### 配合react-inject-props使用
+
+TODO

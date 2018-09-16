@@ -1,5 +1,4 @@
 import { Observable } from 'rxjs';
-import Base = Mocha.reporters.Base;
 
 export type ActionType = string | symbol;
 
@@ -35,7 +34,7 @@ export interface LinkServiceConfig<S> {
 
 export interface BaseConfigLinkService {
   dataSelector?: (payload: any) => any;
-  errorSelector?: (payload: any) => Error;
+  errorSelector?: (payload: any) => any;
 }
 
 export interface RxStoreConfig {
