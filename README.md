@@ -445,7 +445,7 @@ this.linkState({
 
 errorSelector的用法与dataSelector类似。
 
-此外，我们还可以通过[注入RxStore配置](#注入RxStore配置)来修改默认的dataSelector与errorSelector。
+此外，我们还可以通过[注入RxStore配置](#注入rxstore配置)来修改默认的dataSelector与errorSelector。
 
 ### 注入RxStore配置
 
