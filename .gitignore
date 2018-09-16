@@ -4,4 +4,7 @@
 
 node_modules
 lib
+dist
+_dist
+build
 *.log

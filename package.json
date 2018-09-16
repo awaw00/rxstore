@@ -14,7 +14,8 @@
     "ts:es": "tsc --module esnext --outDir es",
     "build": "npm run clean && npm run ts:lib",
     "test": "cross-env NODE_ENV=test mocha --opts mocha.opts",
-    "test:watch": "cross-env NODE_ENV=test mocha --opts mocha.opts --watch"
+    "test:watch": "cross-env NODE_ENV=test mocha --opts mocha.opts --watch",
+    "deploy:example": "gh-pages -d examples/_dist"
   },
   "peerDependencies": {
     "inversify": "^4.13.0",
@@ -27,6 +28,7 @@
     "@types/sinon": "^5.0.2",
     "chai": "^4.1.2",
     "cross-env": "^5.2.0",
+    "gh-pages": "^2.0.0",
     "inversify": "^4.13.0",
     "jsdom": "^12.0.0",
     "jsdom-global": "^3.0.2",
