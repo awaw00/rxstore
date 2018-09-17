@@ -8,6 +8,18 @@
     "name": "awaw00",
     "email": "awaw0618@outlook.com"
   },
+  "keywords": [
+    "rxjs",
+    "reactive",
+    "di",
+    "state management",
+    "store",
+    "redux",
+    "rx",
+    "dependency inject",
+    "react",
+    "typescript"
+  ],
   "scripts": {
     "clean": "rimraf lib && rimraf es",
     "ts:lib": "tsc --module commonjs --outDir lib",
