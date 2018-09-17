@@ -688,5 +688,88 @@ container.bind(ProductDataStore).toSelf().inTransientScope();
 
 ### 配合react-inject-props使用
 
-TODO
+想要在react应用中使用rxstore，react-inject-props是最好的搭档。
 
+使用react-inject-props，可以这样将store注入到组件中：
+
+```typescript
+import React from 'react';
+import { UserPageStore, UserPageState } from '../stores/UserPageStore';
+import { InjectProps } from '../ioc';
+
+interface PageProps {
+  store?: UserPageStore;
+}
+
+type PageState = UserPageState;
+
+@InjectProps({
+  store: UserPageStore
+})
+export class UserPage extends React.Component<PageProps, PageState> {
+ private readonly subscription: { unsubscribe: () => any };
+  constructor (props: PageProps) {
+    super(props);
+    
+    this.subscription = props.store!.state$.subscribe(state => {
+      if (this.state) {
+        this.setState(state);
+      } else {
+        this.state = state;
+      }
+    });
+  }
+  
+  public componentWillUnmount () {
+    this.subscription.unsubscribe();
+  }
+  
+  public render () {
+    const {userInfo, ...} = this.state;
+    ...
+  }
+}
+```
+
+除了提供必要的依赖注入支持之外，它还可以用来实现多级注入系统（使用过Angular的同学应该很熟悉）。
+
+1. 使用多级注入系统替换默认的store实现
+
+如果我们的App结构如下：
+
+```html
+<App>
+  <Router>
+    <Route path="/user/common" component={UserPage}/>
+    <Route
+      path="/user/special"
+      render={(
+        <SpecialUserInfoProvider>
+          <UserPage/>
+        </SpecialUserInfoProvider>
+      )} 
+    />
+  </Router>
+</App>
+```
+
+UserPage组件需要注入UserPageStore，而UserPageStore中需要合并UserInfoStore的状态，我们在根container已经注入了默认的UserInfoStore单例。
+
+现在的需求是，当进入路由为`/user/special`的页面时，其他实现保持原样，但是所展现的用户信息需要从另外的接口中获取，这时候就可以这样实现`SpeciapUserInfoProvider`组件：
+
+```typescript
+import { ProvideProps } from '../ioc';
+import { UserInfoStore } from '../stores/UserInfoStore';
+import { SpecialUserInfoStore } from '../stores/SpecialUserInfoStore';
+
+@ProvideProps([
+  {provide: UserInfoStore, useClass: SpecialUserInfoStore}
+])
+export class SpecialUserInfoProvider extends React.Component {
+  public render () {
+    return this.props.children;
+  }
+}
+```
+
+当然，SpecialUserInfoStore的状态结构以及提供的方法应与UserInfoStore保持一致。
