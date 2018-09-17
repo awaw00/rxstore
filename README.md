@@ -28,6 +28,8 @@ you should install the "reflect-metadata" package as well:
 - ✅ 依赖注入
 - ✅ 使用rx编写响应式代码
 
+🎈 其它高级特性请查看下文中的[高级用法](#-advanced-usage)章节以及[最佳实践](#-best-practice)章节。
+
 ## 📋 Table of contents
 
 - [Quick start](#-quick-start)
@@ -42,6 +44,8 @@ you should install the "reflect-metadata" package as well:
   - [注入RxStore配置](#注入rxstore配置)
   - [Store合并](#store合并)
   - [配合react-inject-props使用](#配合react-inject-props使用)
+- [Best practice](#-best-practice)
+  - [数据仓库模式](#数据仓库模式)
   
 
 ## 🚩 Quick start
@@ -508,8 +512,81 @@ export interface RxStoreConfig {
 
 ### Store合并
 
-TODO
+假设现在有两个Store：UserInfoStore、UserPageStore。
+
+其中，UserInfoStore用于维护当前登录用户的相关信息数据，而UserPageStore用于维护渲染用户中心页面所需的状态。
+
+通常情况下，UserPageStore中的状态与UserInfoStore中的状态应该会有一个包含关系（比如两者的state都包含一个代表用户昵称的nickName字段），这里可以有两种选择：
+
+1. 将UserInfoStore中的某些状态“合并”到UserPageStore中，类似vue、mobx中的computed
+2. 两个store通过调用service方法获取并维护各自的数据
+
+显而易见的，**选项1更为优秀**，产出的代码一定会让我们觉得更加赏心悦目。依托rxjs基于流的优秀设计，我们可以很轻易地实现方案1中的状态合并：
+
+```typescript
+// src/stores/UserInfoStore.ts
+
+export interface UserInfoState {
+  id: string;
+  nickName: string;
+}
+
+export class userStore extends RxStore<UserInfoState> {
+  ...
+}
+```
+
+```typescript
+// src/stores/UserPageStore.ts
+
+import { UserInfoStore, UserInfoState } from './UserInfoStore';
+
+export interface UserPageState {
+  userInfo: UserInfoState;
+  // ... other state
+}
+
+export class UserPageStore extends RxStore<UserPageState> {
+  @inject(UserInfoStore)
+  private userInfoStore: UserInfoStore;
+  
+  @postConstruct()
+  private storeInit () {
+    this.init({
+      initialState: {
+        userInfo: this.userInfoStore.options.initialState,
+        // ...other state
+      },
+      reducer: (state, action) => {
+        // update own state
+        return state;
+      }
+    });
+    
+    // combine state from UserInfoStore
+    this.state$ = combineLatest(
+      this.state$,
+      this.userInfoStore.state$,
+    ).pipe(
+      map(([selfState, userInfoState]) => ({
+        ...selfState,
+        userInfo: userInfoState
+      })),
+    );
+  }
+}
+```
+
+合并之后，当UserInfoStore中的状态发生了变更，UserPageStore的状态也会自动更新了。
+
+store合并可以让我们实现[数据仓库模式](#数据仓库模式)，使我们的代码更易于维护、数据流更加清晰。
 
 ### 配合react-inject-props使用
+
+TODO
+
+## ✨ Best practice
+
+### 数据仓库模式
 
 TODO
