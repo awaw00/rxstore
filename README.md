@@ -774,3 +774,8 @@ export class SpecialUserInfoProvider extends React.Component {
 
 只要确保SpecialUserInfoStore的状态结构以及提供的方法应与UserInfoStore保持一致，那么`/user/special`路由下的UserPage组件就能够正确渲染出来，而不需要在UserPage组件的实现上做任何修改。
 
+## License
+
+MIT
+
+
