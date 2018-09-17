@@ -733,7 +733,7 @@ export class UserPage extends React.Component<PageProps, PageState> {
 
 除了提供必要的依赖注入支持之外，它还可以用来实现多级注入系统（使用过Angular的同学应该很熟悉）。
 
-1. 使用多级注入系统替换默认的store实现
+下面的例子展示了如何使用多级注入系统替换默认的store实现。
 
 如果我们的App结构如下：
 
@@ -772,4 +772,5 @@ export class SpecialUserInfoProvider extends React.Component {
 }
 ```
 
-当然，SpecialUserInfoStore的状态结构以及提供的方法应与UserInfoStore保持一致。
+只要确保SpecialUserInfoStore的状态结构以及提供的方法应与UserInfoStore保持一致，那么`/user/special`路由下的UserPage组件就能够正确渲染出来，而不需要在UserPage组件的实现上做任何修改。
+
