@@ -11,11 +11,11 @@ OOP风格的响应式状态管理方案。
 
 ## 💾 Installation
 
-`npm i @awaw00/rxstore inversify --save`
+`npm i @awaw00/rxstore rxjs inversify --save`
 
 or
 
-`yarn add @awaw00/rxstore inversify`
+`yarn add @awaw00/rxstore rxjs inversify`
 
 you should install the "reflect-metadata" package as well:
 
