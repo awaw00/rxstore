@@ -43,9 +43,9 @@ you should install the "reflect-metadata" package as well:
   - [Link service](#link-service)
   - [注入RxStore配置](#注入rxstore配置)
   - [Store合并](#store合并)
-  - [配合react-inject-props使用](#配合react-inject-props使用)
 - [Best practice](#-best-practice)
   - [数据仓库模式](#数据仓库模式)
+  - [配合react-inject-props使用](#配合react-inject-props使用)
   
 
 ## 🚩 Quick start
@@ -581,12 +581,112 @@ export class UserPageStore extends RxStore<UserPageState> {
 
 store合并可以让我们实现[数据仓库模式](#数据仓库模式)，使我们的代码更易于维护、数据流更加清晰。
 
-### 配合react-inject-props使用
-
-TODO
-
 ## ✨ Best practice
 
 ### 数据仓库模式
 
+这里的“数据”指的是通过rest api、webSocket等方式从服务端获取到的数据。
+
+我们应用中大部分代码都在于这些数据或衍生数据进行交互，这些代码的质量会在很大程度上影响整个项目的质量。
+
+这里提出一种数据仓库模式：**所有此类数据，根据功能或类型划分整理为数据store，其他依赖这些数据的store以store合并的方式注入这些数据。**
+
+比如，要实现一个电商系统，我们先把“商品”相关的接口封装在一个ProductService中：
+
+```typescript
+// src/services/ProductService.ts
+
+import { Http } from './Http'
+
+@injectable()
+export class ProductService {
+  @inject(Http)
+  private http: Http;
+  
+  public getProductList (params: GetProductParams) {
+    return this.http.get<Pagable<ProductListItem>>('/product/list', {params});
+  }
+  
+  public getProductDetail (params: GetProductDetailParams) {
+    return this.http.get<ProductDetail>('/product/detail', {params});
+  }
+  
+  // other api definitions...
+}
+```
+
+然后编写一个ProductDataStore，使用linkService来接入商品接口：
+
+```typescript
+// src/stores/ProductDataStore.ts
+import { injectable, inject, postConstructor } from 'inversify';
+import { RxStore, getInitialAsyncState, AsyncState, AsyncActionType, asyncTypeDef } from '@awaw00/rxstore';
+import { ProductService } from '../services/ProductService';
+
+export interface ProductDataState {
+  productList: AsyncState<Pageable<ProductListItem>>;
+  productDetail: AsyncState<ProductDetail>;
+  // ...
+}
+
+@injectable()
+export class ProductDataStore extends RxStore<ProductDataState> {
+  @asyncTypeDef() public GET_PRODUCT_LIST!: AsyncActionType;
+  @asyncTypeDef() public GET_PRODUCT_DETAIL!: AsyncActionType;
+  
+  @inject(ProductService)
+  private productService: ProductService;
+  
+  @postConstructor()
+  private storeInit () {
+    this.linkService({
+      type: this.GET_PRODUCT_LIST.START,
+      service: this.productService.getProductList.bind(this),
+      state: 'productList'
+    });
+    
+    this.linkService({
+      type: this.GET_PRODUCT_DETAIL.START,
+      service: this.productService.getProductDetail.bind(this),
+      state: 'productDetail'
+    });
+    
+    // ...
+    this.init({
+      initialState: {
+        productList: getInitialAsyncState(),
+        productDetail: getInitialAsyncState(),
+      },
+      reducer: state => state
+    });
+  }
+}
+```
+
+最后，在其他需要使用商品数据的store中，使用[store合并](#store合并)的方式来注入所需的数据。
+
+若数据store中的数据是全局唯一的，可以将数据store注册为单例，比如UserDataStore：
+
+```typescript
+// src/ioc/index.ts
+...
+import { UserDataStore } from '../stores/UserDataStore';
+
+container.bind(UserDataStore).toSelf().inSingletonScope();
+```
+
+像商品这样的数据，也许会存在一个页面包含两个或更多个商品列表的场景，每个列表的数据应该是独立的，应该注册为临时性的“瞬态”（Transient）：
+
+```typescript
+...
+import { ProductDataStore } from '../stores/ProductDataStore';
+
+container.bind(ProductDataStore).toSelf().inTransientScope();
+```
+
+搭配[react-inject-props](https://github.com/awaw00/react-inject-props)，可以更容易地管理依赖注册的作用域，详见[配合react-inject-props](#配合react-inject-props)章节。
+
+### 配合react-inject-props使用
+
 TODO
+
