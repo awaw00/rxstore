@@ -345,7 +345,7 @@ describe('Test', () => {
     store.dispatch({type: store.GET_DATA_WITH_CUSTOM_ERR_SELECTOR.START});
   });
 
-  it.only('Epic action', (done) => {
+  it('Epic action', (done) => {
     interface State {
       loopCount: number;
     }
