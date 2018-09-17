@@ -737,7 +737,7 @@ export class UserPage extends React.Component<PageProps, PageState> {
 
 如果我们的App结构如下：
 
-```html
+```jsx harmony
 <App>
   <Router>
     <Route path="/user/common" component={UserPage}/>
