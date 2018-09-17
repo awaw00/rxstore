@@ -23,11 +23,28 @@ you should install the "reflect-metadata" package as well:
 
 ## 🚀 Features
 
-- ✅ 类似redux，但是模块化的状态容器
-- ✅ 强大的inversif依赖注入支持
-- ✅ 使用rxjs管理状态以及处理副作用
+- ✅ 模块化store
+- ✅ 可控的store作用域，Singleton or Transient
+- ✅ 依赖注入
+- ✅ 使用rx编写响应式代码
 
-## 🚩 Usage Guide
+## 📋 Table of contents
+
+- [Quick start](#-quick-start)
+  - [准备工作](#准备工作)
+  - [定义State接口](#定义state接口)
+  - [编写Store类](#编写store类)
+  - [绑定Store](#绑定store)
+  - [使用Store](#使用store)
+  - [Counter demo](#counter-demo)
+- [Advanced usage](#-advanced-usage)
+  - [Link service](#link-service)
+  - [注入RxStore配置](#注入rxstore配置)
+  - [Store合并](#store合并)
+  - [配合react-inject-props使用](#配合react-inject-props使用)
+  
+
+## 🚩 Quick start
 
 ### 准备工作
 
@@ -292,9 +309,11 @@ export default App;
 
 启动项目，大功告成！
 
+### Counter demo
+
 查看[在线DEMO](https://awaw00.github.io/rxstore/counter/)，查看[完整代码](https://github.com/awaw00/rxstore/tree/master/examples/counter)。
 
-## 💎 Advanced Usage
+## 💎 Advanced usage
 
 ### Link Service
 
@@ -487,7 +506,7 @@ export interface RxStoreConfig {
 }
 ```
 
-### store合并
+### Store合并
 
 TODO
 
