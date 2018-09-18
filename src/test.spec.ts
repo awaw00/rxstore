@@ -15,7 +15,7 @@ import {
 } from './index';
 import { expect } from 'chai';
 import { combineLatest, concat, forkJoin, merge, Observable, of, Subject, throwError } from 'rxjs';
-import { bufferCount, map, mapTo, skip, skipWhile, take, takeUntil, tap } from 'rxjs/operators';
+import { bufferCount, map, mapTo, skip, skipWhile, take, takeUntil, tap, withLatestFrom } from 'rxjs/operators';
 
 describe('Test', () => {
   let rootContainer: Container;
@@ -403,17 +403,125 @@ describe('Test', () => {
         merge(
           action$.pipe(
             ofType(store.PONG),
-            take(1)
+            take(1),
           ),
           of(0).pipe(tap(() => {
             store.dispatch({type: store.PING});
           })),
-        )
+        ),
       ),
     ).subscribe(() => {
       done();
     });
 
     store.dispatch({type: store.LOOP});
+  });
+  it('Should state update before subscribed', (done) => {
+    interface State {
+      count: number;
+    }
+
+    @injectable()
+    class Store extends RxStore<State> {
+      @typeDef() public INCREASE!: ActionType;
+      @typeDef() public DOUBLE!: ActionType;
+
+      @postConstruct()
+      private storeInit () {
+        this.init({
+          initialState: {
+            count: 0,
+          },
+          reducer: (state, action) => {
+            switch (action.type) {
+              case this.INCREASE:
+                return {...state, count: state.count + action.payload};
+            }
+            return state;
+          },
+        });
+      }
+
+      @effect()
+      private onDouble () {
+        return this.action$.pipe(
+          ofType(this.DOUBLE),
+          withLatestFrom(this.state$, (action, state) => state.count),
+          map(count => ({type: this.INCREASE, payload: count})),
+        );
+      }
+    }
+
+    const store = rootContainer.resolve(Store);
+
+    store.dispatch({type: store.INCREASE, payload: 1});
+    store.dispatch({type: store.DOUBLE});
+
+    store.state$.pipe(take(1)).subscribe(state => {
+      expect(state.count).is.eq(2);
+      done();
+    });
+  });
+  it('Should combined state update before subscribed', (done) => {
+    interface State {
+      count: number;
+    }
+
+    @injectable()
+    class CounterStore extends RxStore<State> {
+      @typeDef() public INCREASE!: ActionType;
+      @typeDef() public DOUBLE!: ActionType;
+
+      @postConstruct()
+      private storeInit () {
+        this.init({
+          initialState: {
+            count: 0,
+          },
+          reducer: (state, action) => {
+            if (action.type === this.INCREASE) {
+              return {...state, count: state.count + 1};
+            }
+            return state;
+          },
+        });
+      }
+
+    }
+
+    @injectable()
+    class CombinedStore extends RxStore<State> {
+      @inject(CounterStore)
+      public counterStore!: CounterStore;
+
+      @postConstruct()
+      private storeInit () {
+        this.init({
+          initialState: {
+            count: this.counterStore!.options.initialState.count,
+          },
+          reducer: state => state,
+        });
+
+        this.state$ = combineLatest(
+          this.state$,
+          this.counterStore!.state$,
+        ).pipe(
+          map(([selfState, counterState]) => ({
+            count: counterState.count,
+          })),
+        );
+      }
+    }
+
+    rootContainer.bind(CounterStore).toSelf().inSingletonScope();
+    const store = rootContainer.resolve(CombinedStore);
+
+    store.counterStore.dispatch({type: store.counterStore.INCREASE});
+
+    store.state$.pipe(take(1)).subscribe(state => {
+      expect(state.count).is.eq(1);
+      done();
+    });
   });
 });
