@@ -5,9 +5,9 @@ rxstore
 [![npm version](https://badge.fury.io/js/%40awaw00%2Frxstore.svg)](https://badge.fury.io/js/%40awaw00%2Frxstore)
 [![Dependency Status](https://david-dm.org/awaw00/rxstore.svg)](https://david-dm.org/awaw00/rxstore)
 
-OOP style reactive state manage solution.
+Redux like but reactive and modularized state manage solution.
 
-OOP风格的响应式状态管理方案。
+Redux风格的响应式模块化状态管理方案。
 
 ## 💾 Installation
 
