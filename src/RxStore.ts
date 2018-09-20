@@ -46,11 +46,7 @@ export abstract class RxStore<S extends object = any> {
     };
   }
 
-  protected linkService (linkServiceConfig: LinkServiceConfig<S>) {
-    this.serviceNeedLinkConfigs.push(linkServiceConfig);
-  }
-
-  protected init (options: RxStoreInitOptions<S>) {
+  public init (options: RxStoreInitOptions<S>) {
     this.options = options;
     const {linkService: configLinkService} = this.storeConfig;
 
@@ -139,6 +135,10 @@ export abstract class RxStore<S extends object = any> {
 
     this.unsubscriber = withEffect$.subscribe();
     this.dispatch({type: Symbol('@@INIT')});
+  }
+
+  protected linkService (linkServiceConfig: LinkServiceConfig<S>) {
+    this.serviceNeedLinkConfigs.push(linkServiceConfig);
   }
 
   private setTypesValue () {
