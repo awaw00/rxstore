@@ -2,7 +2,7 @@ import { merge, Observable, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, map, scan, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { inject, injectable, optional } from 'inversify';
 import { asyncTypeDefNamesKey, effectNamesKey, typeDefNamesKey } from './metadataKeys';
-import { Action, AsyncState, LinkServiceConfig, RxStoreConfig, RxStoreInitOptions } from './interfaces';
+import { Action, AsyncState, DispatchAbleAction, LinkServiceConfig, RxStoreConfig, RxStoreInitOptions } from './interfaces';
 import { isAction, isLinkServiceConfig } from './utils';
 import * as tokens from './tokens';
 import { ofType } from './operators';
@@ -136,6 +136,13 @@ export abstract class RxStore<S extends object = any> {
     this.unsubscriber = withEffect$.subscribe();
     this.dispatch({type: Symbol('@@INIT')});
   }
+
+  protected action = <P = any>(action: Action<P>): DispatchAbleAction<P> => {
+    return {
+      ...action,
+      dispatch: this.dispatch.bind(this, action)
+    };
+  };
 
   protected linkService (linkServiceConfig: LinkServiceConfig<S>) {
     this.serviceNeedLinkConfigs.push(linkServiceConfig);

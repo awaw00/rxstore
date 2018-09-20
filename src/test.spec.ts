@@ -15,7 +15,20 @@ import {
 } from './index';
 import { expect } from 'chai';
 import { combineLatest, concat, forkJoin, merge, Observable, of, Subject, throwError } from 'rxjs';
-import { bufferCount, map, mapTo, skip, skipWhile, take, takeUntil, tap, withLatestFrom } from 'rxjs/operators';
+import {
+  bufferCount, delay,
+  map,
+  mapTo,
+  skip,
+  skipWhile,
+  startWith, switchMap,
+  take,
+  takeUntil,
+  tap,
+  withLatestFrom,
+} from 'rxjs/operators';
+import { getBaseClassDependencyCount } from 'inversify/dts/planning/reflection_utils';
+import { root } from 'rxjs/internal-compatibility';
 
 describe('Test', () => {
   let rootContainer: Container;
@@ -523,5 +536,32 @@ describe('Test', () => {
       expect(state.count).is.eq(1);
       done();
     });
+  });
+
+  it('Dispatch able action', (done) => {
+    @injectable()
+    class Store extends RxStore<{}> {
+      @typeDef() public ACTION!: ActionType;
+      public act = () => this.action({type: this.ACTION});
+
+      @postConstruct()
+      private storeInit () {
+        this.init({
+          initialState: {},
+          reducer: state => state
+        });
+      }
+    }
+
+    const store = rootContainer.resolve(Store);
+
+    expect(store.act().type).is.eq(store.ACTION);
+
+    action$.subscribe(action => {
+      expect(action.type === store.ACTION);
+      done();
+    });
+
+    store.act().dispatch();
   });
 });

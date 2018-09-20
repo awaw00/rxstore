@@ -13,6 +13,10 @@ export interface Action<P = any> {
   payload?: P;
 }
 
+export interface DispatchAbleAction<P = any> extends Action<P> {
+  dispatch: () => void;
+}
+
 export interface RxStoreInitOptions<S> {
   initialState: S;
   reducer: (state: S, action: Action) => S;
