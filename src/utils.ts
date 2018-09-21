@@ -9,7 +9,7 @@ export function getInitialAsyncState<T = any> (initialData?: T): AsyncState<T> {
 }
 
 export function isAction (obj: Action): obj is Action {
-  return typeof obj === 'object' && 'type' in obj && typeof obj.type === 'string' || typeof obj.type === 'symbol';
+  return typeof obj === 'object' && 'type' in obj && (typeof obj.type === 'string' || typeof obj.type === 'symbol');
 }
 
 export function isAsyncActionType (obj: AsyncActionType): obj is AsyncActionType {
