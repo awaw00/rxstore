@@ -23,8 +23,8 @@ export abstract class RxStore<S extends object = any> {
 
   @inject(tokens.ActionStream)
   protected action$!: Subject<Action>;
-  private unsubscriber!: { unsubscribe: () => void };
-  private serviceNeedLinkConfigs: LinkServiceConfig<S>[] = [];
+  protected unsubscriber!: { unsubscribe: () => void };
+  protected serviceNeedLinkConfigs: LinkServiceConfig<S>[] = [];
 
   constructor () {
     this.setTypesValue();
