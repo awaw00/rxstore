@@ -93,6 +93,8 @@ export abstract class RxStore<S extends object = any> {
 
     this.state$ = this.action$.pipe(
       scan(reducer, this.options.initialState),
+      distinctUntilChanged(),
+      shareReplay(1),
     );
 
     if (options.merge) {
@@ -128,11 +130,6 @@ export abstract class RxStore<S extends object = any> {
           this.dispatch(action);
         }
       }),
-    );
-
-    this.state$ = this.state$.pipe(
-      distinctUntilChanged(),
-      shareReplay(1),
     );
 
     const withEffect$ = merge(
