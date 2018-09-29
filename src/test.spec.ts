@@ -16,7 +16,7 @@ import {
 import { expect } from 'chai';
 import { combineLatest, concat, forkJoin, merge, Observable, of, Subject, throwError } from 'rxjs';
 import {
-  bufferCount, delay,
+  bufferCount, delay, ignoreElements,
   map,
   mapTo,
   skip,
@@ -514,16 +514,30 @@ describe('Test', () => {
             count: this.counterStore!.options.initialState.count,
           },
           reducer: state => state,
+          merge: state$ => {
+            return combineLatest(
+              state$,
+              this.counterStore!.state$,
+            ).pipe(
+              map(([selfState, counterState]) => ({
+                count: counterState.count,
+              })),
+            );
+          }
         });
+      }
 
-        this.state$ = combineLatest(
-          this.state$,
-          this.counterStore!.state$,
-        ).pipe(
-          map(([selfState, counterState]) => ({
-            count: counterState.count,
-          })),
-        );
+      @effect()
+      private effectTest () {
+        return this.action$.pipe(
+          ofType(this.counterStore.INCREASE),
+          withLatestFrom(this.state$),
+          tap(([action, state]) => {
+            expect(state.count).is.eq(1);
+            done();
+          }),
+          ignoreElements()
+        )
       }
     }
 
@@ -531,11 +545,6 @@ describe('Test', () => {
     const store = rootContainer.resolve(CombinedStore);
 
     store.counterStore.dispatch({type: store.counterStore.INCREASE});
-
-    store.state$.pipe(take(1)).subscribe(state => {
-      expect(state.count).is.eq(1);
-      done();
-    });
   });
 
   it('Dispatch able action', (done) => {

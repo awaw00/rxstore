@@ -95,6 +95,10 @@ export abstract class RxStore<S extends object = any> {
       scan(reducer, this.options.initialState),
     );
 
+    if (options.merge) {
+      this.state$ = options.merge(this.state$);
+    }
+
     const effectNames = Reflect.getMetadata(effectNamesKey, this);
     const effectMethodNames = effectNames ? effectNames.split('|') : [];
 
@@ -125,10 +129,6 @@ export abstract class RxStore<S extends object = any> {
         }
       }),
     );
-
-    if (options.merge) {
-      this.state$ = options.merge(this.state$);
-    }
 
     this.state$ = this.state$.pipe(
       distinctUntilChanged(),
