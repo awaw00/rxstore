@@ -93,8 +93,6 @@ export abstract class RxStore<S extends object = any> {
 
     this.state$ = this.action$.pipe(
       scan(reducer, this.options.initialState),
-      distinctUntilChanged(),
-      shareReplay(1),
     );
 
     const effectNames = Reflect.getMetadata(effectNamesKey, this);
@@ -126,6 +124,15 @@ export abstract class RxStore<S extends object = any> {
           this.dispatch(action);
         }
       }),
+    );
+
+    if (options.merge) {
+      this.state$ = options.merge(this.state$);
+    }
+
+    this.state$ = this.state$.pipe(
+      distinctUntilChanged(),
+      shareReplay(1),
     );
 
     const withEffect$ = merge(
