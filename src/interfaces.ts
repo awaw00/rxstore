@@ -20,7 +20,7 @@ export interface DispatchAbleAction<P = any> extends Action<P> {
 
 export interface RxStoreInitOptions<S> {
   initialState: S;
-  reducer: (state: S, action: Action) => S;
+  reducer?: (state: S, action: Action) => S;
   merge?: (state$: Observable<S>) => Observable<S>;
 }
 

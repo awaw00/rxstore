@@ -48,6 +48,10 @@ export abstract class RxStore<S extends object = any> {
 
   public init (options: RxStoreInitOptions<S>) {
     this.options = options;
+
+    if (!this.options.reducer) {
+      this.options.reducer = s => s;
+    }
     const {linkService: configLinkService} = this.storeConfig;
 
     const reducer = (state: S, action: Action) => {
@@ -88,7 +92,7 @@ export abstract class RxStore<S extends object = any> {
         }
       }
 
-      return this.options.reducer(state, action);
+      return this.options.reducer!(state, action);
     };
 
     this.state$ = this.action$.pipe(
